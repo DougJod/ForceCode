@@ -4,20 +4,19 @@ import sleep from './../util/sleep';
 import * as error from './../util/error';
 const parseString: any = require('xml2js').parseString;
 
-var elegantSpinner = require('elegant-spinner');
+var elegantSpinner: any = require('elegant-spinner');
 const UPDATE: boolean = true;
 const CREATE: boolean = false;
 
 export default function compile(document: vscode.TextDocument, context: vscode.ExtensionContext): Promise<any> {
-  'use strict';
 
   const body: string = document.getText();
   const ext: string = parsers.getFileExtension(document);
   const toolingType: string = parsers.getToolingType(document);
   const fileName: string = parsers.getFileName(document);
   const name: string = parsers.getName(document, toolingType);
-  const spinner = elegantSpinner();
-  var interval = undefined;
+  const spinner: any = elegantSpinner();
+  var interval: any = undefined;
 
   /* tslint:disable */
   var DefType: string = undefined;
@@ -96,12 +95,12 @@ export default function compile(document: vscode.TextDocument, context: vscode.E
   // =======================================================================================================================================
   function getAuraBundle(svc) {
     return vscode.window.forceCode.conn.tooling.sobject('AuraDefinitionBundle').find({
-      'DeveloperName': name
+      'DeveloperName': name, NamespacePrefix: vscode.window.forceCode.config.prefix
     });
   }
   function getAuraDefinition(svc) {
     return vscode.window.forceCode.conn.tooling.sobject('AuraDefinition').find({
-      'AuraDefinitionBundle.DeveloperName': name
+      'AuraDefinitionBundle.DeveloperName': name, NamespacePrefix: vscode.window.forceCode.config.prefix
     });
   }
   function getAuraMembers(svc) {
@@ -119,7 +118,6 @@ export default function compile(document: vscode.TextDocument, context: vscode.E
       }).then(bundle => {
         results[0] = [bundle];
         return results;
-        // return vscode.window.forceCode.conn.tooling.sobject('AuraDefinition').create({ AuraDefinitionBundleId: bundle.id, DefType, Format, Source });
       });
     } else {
       return results;
@@ -202,8 +200,26 @@ export default function compile(document: vscode.TextDocument, context: vscode.E
   // =======================================================================================================================================
 
   function addToContainer() {
+    // Namespace fixes... do we need this??
+    let prefix: string = '';
+    let shortName: string = '';
+    if (fileName.indexOf('__') > -1) {
+      let nameParts: string[] = fileName.split('__');
+      if (nameParts.length > 1) {
+        prefix = nameParts[0];
+        shortName = nameParts[1];
+      } else {
+        shortName = name;
+      }
+    } else {
+      shortName = name;
+    }
+    if (vscode.window.forceCode.config.prefix) {
+      prefix = vscode.window.forceCode.config.prefix;
+    }
+
     return vscode.window.forceCode.conn.tooling.sobject(toolingType)
-      .find({ Name: name }).execute()
+      .find({ Name: shortName, NamespacePrefix: prefix }).execute()
       .then(records => addMember(records));
     function addMember(records) {
       if (records.length > 0) {
@@ -230,9 +246,9 @@ export default function compile(document: vscode.TextDocument, context: vscode.E
       }
     }
     function createObject(text: string): {} {
-      if (toolingType === 'ApexClass') {
+      if (toolingType === 'ApexClass' || toolingType === 'ApexTrigger') {
         return { Body: text };
-      } else if (toolingType === 'ApexPage') {
+      } else if (toolingType === 'ApexPage' || toolingType === 'ApexComponent') {
         return {
           Markup: text,
           Masterlabel: name + 'Label',
@@ -279,7 +295,7 @@ export default function compile(document: vscode.TextDocument, context: vscode.E
         } else if (checkCount > 30) {
           throw { message: 'Timeout' };
         } else {
-          return sleep(1000).then(nextStatus);
+          return sleep(vscode.window.forceCode.config.poll || 1000).then(nextStatus);
         }
       });
     }
@@ -310,7 +326,7 @@ export default function compile(document: vscode.TextDocument, context: vscode.E
       res.records.filter(r => r.State !== 'Error').forEach(containerAsyncRequest => {
         containerAsyncRequest.DeployDetails.componentFailures.forEach(failure => {
           if (failure.problemType === 'Error') {
-            var failureLineNumber: number = failure.lineNumber || failure.LineNumber || 1;
+            var failureLineNumber: number = Math.abs(failure.lineNumber || failure.LineNumber || 1);
             var failureRange: vscode.Range = document.lineAt(failureLineNumber - 1).range;
             if (failure.columnNumber > 0) {
               failureRange = failureRange.with(new vscode.Position((failureLineNumber - 1), failure.columnNumber));

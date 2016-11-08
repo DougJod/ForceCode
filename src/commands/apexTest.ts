@@ -4,13 +4,12 @@ import * as error from './../util/error';
 import { configuration } from './../services';
 
 export default function apexTest(document: vscode.TextDocument, context: vscode.ExtensionContext): Promise<any> {
-    'use strict';
-    vscode.window.setStatusBarMessage('ForceCode: Compiling...');
+    vscode.window.setStatusBarMessage('ForceCode: $(pulse) Running Unit Tests $(pulse)');
 
-    const body: string = document.getText();
-    const ext: string = parsers.getFileExtension(document);
+    // const body: string = document.getText();
+    // const ext: string = parsers.getFileExtension(document);
     const toolingType: string = parsers.getToolingType(document);
-    const fileName: string = parsers.getFileName(document);
+    // const fileName: string = parsers.getFileName(document);
     const name: string = parsers.getName(document, toolingType);
     /* tslint:disable */
     var DefType: string = undefined;
@@ -29,7 +28,7 @@ export default function apexTest(document: vscode.TextDocument, context: vscode.
 
     function getClassInfo(svc) {
         return vscode.window.forceCode.conn.tooling.sobject(toolingType)
-            .find({ Name: name }).execute();
+            .find({ Name: name, NamespacePrefix: vscode.window.forceCode.config.prefix }).execute();
     }
 
     function getTestMethods(info): string[] {
@@ -43,7 +42,7 @@ export default function apexTest(document: vscode.TextDocument, context: vscode.
     }
 
     function runCurrentTests(results) {
-        var info = results[0];
+        var info: any = results[0];
         var methodNames: string[] = getTestMethods(info);
         vscode.window.setStatusBarMessage('ForceCode: $(pulse) Running Unit Tests $(pulse)');
         return vscode.window.forceCode.conn.tooling.runUnitTests(info.Id, methodNames);
@@ -51,11 +50,10 @@ export default function apexTest(document: vscode.TextDocument, context: vscode.
     // =======================================================================================================================================
 
     function showResult(res) {
-        'use strict';
         return configuration().then(config => {
             vscode.window.forceCode.outputChannel.clear();
-            if (res.failures.length > 0) { 
-                vscode.window.forceCode.outputChannel.appendLine('=========================================================   TEST FAILURES   =========================================================='); 
+            if (res.failures.length > 0) {
+                vscode.window.forceCode.outputChannel.appendLine('=========================================================   TEST FAILURES   ==========================================================');
                 vscode.window.setStatusBarMessage('ForceCode: Some Tests Failed $(thumbsdown)');
             } else {
                 vscode.window.setStatusBarMessage('ForceCode: All Tests Passed $(thumbsup)');
@@ -74,10 +72,10 @@ export default function apexTest(document: vscode.TextDocument, context: vscode.
         });
     }
 
-    function onError(err): any {
-        error.outputError(err, vscode.window.forceCode.outputChannel);
-        return err;
-    }
+    // function onError(err): any {
+    //     error.outputError(err, vscode.window.forceCode.outputChannel);
+    //     return err;
+    // }
 
     // =======================================================================================================================================
 }

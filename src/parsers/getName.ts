@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 export default function getName(document: vscode.TextDocument, toolingType: string): string {
-    'use strict';
     if (toolingType === 'ApexClass') {
         return getNameFromClassBody(document);
     } else if (toolingType === 'AuraDefinition') {
@@ -9,15 +8,13 @@ export default function getName(document: vscode.TextDocument, toolingType: stri
     return getFileName(document);
 }
 export function getFileName(document: vscode.TextDocument) {
-    'use strict';
-    const slash: string = vscode.window.forceCode.pathSeparator;
+    // const slash: string = vscode.window.forceCode.pathSeparator;
     var fileName: string = document.fileName.substring(0, document.fileName.lastIndexOf('.'));
     var fileNameArray: string[] = fileName.split(/[\\\/]/);
     fileName = fileNameArray[fileNameArray.length - 1];
     return fileName;
 }
 function getNameFromClassBody(document: vscode.TextDocument): string {
-    'use strict';
     const slash: string = vscode.window.forceCode.pathSeparator;
     var fileNameArray: string[] = getFileName(document).split(slash);
     var fileName: string = fileNameArray[fileNameArray.length - 1];
@@ -26,12 +23,11 @@ function getNameFromClassBody(document: vscode.TextDocument): string {
     var words: string[] = firstLine.trim().split(' ');
     var className: string = words.length && words[words.length - 1];
     if (fileName !== className) {
-        vscode.window.showWarningMessage(`Class Name (${className}) is not the same as the File Name (${fileName}).  Please fix this.`);
+        vscode.window.forceCode.outputChannel.appendLine(`It appears to me that the Class Name (${className}) is not the same as the File Name (${fileName}).  You may want to fix this.  Be warned, I am saving it as ${className}`);
     }
     return className;
 }
 export function getAuraNameFromFileName(fileName: string): string {
-    'use strict';
     const slash: string = vscode.window.forceCode.pathSeparator;
     var parts: string[] = fileName.split(`src${slash}aura${slash}`);
     var auraNameParts: string[] = (parts && parts.length) > 1 ? parts[1].split(slash) : undefined;

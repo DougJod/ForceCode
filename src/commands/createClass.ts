@@ -35,7 +35,7 @@ export default function createClass(context: vscode.ExtensionContext) {
             }, {
                 title: CUSTOM_CLASS,
                 description: 'Any custom class that does not fit standard conventions.',
-            }
+            },
         ];
         let options: vscode.QuickPickItem[] = classOptions.map(res => {
             return {
@@ -77,7 +77,7 @@ export default function createClass(context: vscode.ExtensionContext) {
                 vscode.window.setStatusBarMessage('ForceCode: Error creating file');
                 vscode.window.showErrorMessage('Cannot create ' + finalClassName + '. A file with that name already exists!');
             } else if (err.code === 'ENOENT') {
-                var classFile: string = `public class ${classname} {
+                var classFile: string = `public with sharing class ${classname} {
 
 }`;
                 fs.writeFile(finalClassName, classFile, function (writeErr) {
@@ -102,7 +102,7 @@ export default function createClass(context: vscode.ExtensionContext) {
             } else if (err.code === 'ENOENT') {
 
                 var metaFile: string = `<?xml version="1.0" encoding="UTF-8"?>
-<ApexClass>
+<ApexClass xmlns="http://soap.sforce.com/2006/04/metadata">
     <apiVersion>${config.apiVersion || '37.0'}</apiVersion>
     <status>Active</status>
 </ApexClass>`;
