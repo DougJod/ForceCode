@@ -3,13 +3,13 @@ import fs = require('fs-extra');
 // import jsforce = require('jsforce');
 import * as error from './../util/error';
 
-import {getIcon, getExtension, getFolder} from './../parsers';
+import { getIcon, getExtension, getFolder } from './../parsers';
 const TYPEATTRIBUTE: string = 'type';
 
 export default function open(context: vscode.ExtensionContext) {
     const slash: string = vscode.window.forceCode.pathSeparator;
     let bundleName: string = '';
-    vscode.window.setStatusBarMessage('open Started');
+    vscode.window.forceCode.statusBarItem.text = 'ForceCode: Open File';
 
     return vscode.window.forceCode.connect(context)
         .then(svc => showFileOptions())
@@ -21,20 +21,15 @@ export default function open(context: vscode.ExtensionContext) {
     // =======================================================================================================================================
     // =======================================================================================================================================
     function showFileOptions() {
-        var promises: any[] = [
-            // Apex Stuff
-            vscode.window.forceCode.conn.tooling.query('SELECT Id, Name, NamespacePrefix FROM ApexClass'),
-            vscode.window.forceCode.conn.tooling.query('SELECT Id, Name, NamespacePrefix FROM ApexTrigger'),
-            // VisualForce stuff
-            vscode.window.forceCode.conn.tooling.query('SELECT Id, Name, NamespacePrefix FROM ApexPage'),
-            vscode.window.forceCode.conn.tooling.query('SELECT Id, Name, NamespacePrefix FROM ApexComponent'),
-            vscode.window.forceCode.conn.tooling.query('SELECT Id, Name, NamespacePrefix, ContentType FROM StaticResource'),
-            // Lightning stuff
-            vscode.window.forceCode.conn.tooling.query('SELECT Id, DeveloperName, NamespacePrefix, ApiVersion, Description FROM AuraDefinitionBundle'),
-        ];
+        var metadataTypes: string[] = ['ApexClass', 'ApexTrigger', 'ApexPage', 'ApexComponent', 'StaticResource'];
+        var predicate: string = `WHERE NamespacePrefix = '${vscode.window.forceCode.config.prefix ? vscode.window.forceCode.config.prefix : ''}'`;
+        var promises: any[] = metadataTypes.map(t => {
+            var q: string = `SELECT Id, Name, NamespacePrefix FROM ${t} ${predicate}`;
+            return vscode.window.forceCode.conn.tooling.query(q);
+        });
+        promises.push(vscode.window.forceCode.conn.tooling.query('SELECT Id, DeveloperName, NamespacePrefix, Description FROM AuraDefinitionBundle ' + predicate));
         // TODO: Objects
-        // TODO: Static Resources
-        // TODO: Packages
+        // TODO: Generic Metadata retrieve
         return Promise.all(promises).then(results => {
             let options: vscode.QuickPickItem[] = results
                 .map(res => res.records)
@@ -46,11 +41,10 @@ export default function open(context: vscode.ExtensionContext) {
                     let icon: string = getIcon(toolingType);
                     let ext: string = getExtension(toolingType);
                     let name: string = record.Name || record.DeveloperName;
-                    let prefix: string = record.NamespacePrefix ? record.NamespacePrefix + '.' : '';
                     return {
                         description: `${record.Id}`,
                         detail: `${record.attributes[TYPEATTRIBUTE]}`,
-                        label: `$(${icon}) - ${prefix}${name}.${ext}`,
+                        label: `$(${icon}) - ${name}.${ext}`,
                     };
                 });
             let config: {} = {
@@ -107,9 +101,9 @@ export default function open(context: vscode.ExtensionContext) {
                     var defType: string = res.DefType.toLowerCase().split('').map((c, i) => i === 0 ? c.toUpperCase() : c).join('');
                 }
                 let extension: string = getExtension(defType);
-                // let filename: string = `${vscode.workspace.rootPath}/src/aura/${bundleName}/${bundleName}${defType}.${extension}`;
                 let actualFileName: string = extension === 'js' ? bundleName + defType : bundleName;
-                filename = vscode.workspace.rootPath + slash + 'src' + slash + 'aura' + slash + bundleName + slash + actualFileName + '.' + extension;
+                // Here is replaceSrc possiblity
+                filename = vscode.workspace.rootPath + slash + vscode.window.forceCode.config.src + slash + 'aura' + slash + bundleName + slash + actualFileName + '.' + extension;
                 let body: string = res.Source;
                 return new Promise((resolve, reject) => {
                     fs.outputFile(filename, body, function (err) {
@@ -121,7 +115,8 @@ export default function open(context: vscode.ExtensionContext) {
                     });
                 });
             } else {
-                filename = `${vscode.workspace.rootPath}/src/${getFolder(toolingType)}/${res.FullName || res.Name}.${getExtension(toolingType)}`;
+                // Here is replaceSrc possiblity
+                filename = `${vscode.workspace.rootPath}${slash}${vscode.window.forceCode.config.src}${slash}${getFolder(toolingType)}${slash}${res.Name || res.FullName}.${getExtension(toolingType)}`;
                 let body: string = res.Body || res.Markup;
                 return new Promise((resolve, reject) => {
                     fs.outputFile(filename, body, function (err) {
@@ -137,7 +132,7 @@ export default function open(context: vscode.ExtensionContext) {
     }
     // =======================================================================================================================================
     function finished(rsp): boolean {
-        vscode.window.setStatusBarMessage('ForceCode: Retrieve Lightning Finished');
+        vscode.window.forceCode.statusBarItem.text = 'ForceCode: Retrieve Finished';
         return true;
     }
     // =======================================================================================================================================

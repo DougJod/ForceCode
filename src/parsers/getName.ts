@@ -10,8 +10,19 @@ export default function getName(document: vscode.TextDocument, toolingType: stri
 export function getFileName(document: vscode.TextDocument) {
     // const slash: string = vscode.window.forceCode.pathSeparator;
     var fileName: string = document.fileName.substring(0, document.fileName.lastIndexOf('.'));
+    // split on pathSeparator
     var fileNameArray: string[] = fileName.split(/[\\\/]/);
+    // give me the last one, giving me just the fileName
     fileName = fileNameArray[fileNameArray.length - 1];
+    return fileName;
+}
+export function getWholeFileName(document: vscode.TextDocument) {
+    // const slash: string = vscode.window.forceCode.pathSeparator;
+    // var fileName: string = document.fileName.substring(0, document.fileName.lastIndexOf('.'));
+    // split on pathSeparator
+    var fileNameArray: string[] = document.fileName.split(/[\\\/]/);
+    // give me the last one, giving me just the fileName
+    var fileName = fileNameArray[fileNameArray.length - 1];
     return fileName;
 }
 function getNameFromClassBody(document: vscode.TextDocument): string {
@@ -29,8 +40,10 @@ function getNameFromClassBody(document: vscode.TextDocument): string {
 }
 export function getAuraNameFromFileName(fileName: string): string {
     const slash: string = vscode.window.forceCode.pathSeparator;
-    var parts: string[] = fileName.split(`src${slash}aura${slash}`);
-    var auraNameParts: string[] = (parts && parts.length) > 1 ? parts[1].split(slash) : undefined;
-    var auraName: string = (auraNameParts && auraNameParts.length) > 0 ? auraNameParts[0] : undefined;
-    return auraName;
+	// Here is replaceSrc possiblity
+    // Get the folder and filename part of the path, then split that again on the slashes
+    // We should now have something like ['foo/bar/baz/buzz', 'component/componentController.js']
+    // We should now have something like ['component', 'componentController.js']
+    // So give me the first one
+    return fileName.split(`${vscode.window.forceCode.config.src}${slash}aura${slash}`).pop().split(slash).shift();
 }
