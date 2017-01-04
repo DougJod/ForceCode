@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
+import * as path from 'path';
 import { getIcon } from './../parsers';
 import * as error from './../util/error';
 import { configuration } from './../services';
@@ -9,7 +10,6 @@ const quickPickOptions: vscode.QuickPickOptions = {
 };
 export default function enterCredentials() {
     vscode.window.forceCode.statusBarItem.text = 'ForceCode: Show Menu';
-    const slash: string = vscode.window.forceCode.pathSeparator;
     return getUsername()
         .then(cfg => getPassword(cfg))
         .then(cfg => getUrl(cfg))
@@ -46,7 +46,7 @@ export default function enterCredentials() {
             password: true,
             value: config.password || '',
             placeHolder: 'enter your password and token',
-            prompt: 'Please enter your SFDC username',
+            prompt: 'Please enter your SFDC password and token',
         };
         return vscode.window.showInputBox(options).then(function (result: string) {
             config.password = result || config.password || '';
@@ -98,8 +98,20 @@ export default function enterCredentials() {
     // =======================================================================================================================================
     // =======================================================================================================================================
     function finished(config) {
-        // console.log(config);
-        fs.outputFile(vscode.workspace.rootPath + slash + 'force.json', JSON.stringify(config, undefined, 4));
+        const defaultOptions: {} = {
+            autoRefresh: false,
+            browser: 'Google Chrome Canary',
+            pollTimeout: 1200,
+            debugOnly: true,
+            apiVersion: '38.0',
+            deployOptions: {
+                'checkOnly': false,
+                'testLevel': 'runLocalTests',
+                'verbose': false,
+                'ignoreWarnings': true
+            }
+        };
+        fs.outputFile(vscode.workspace.rootPath + path.sep + 'force.json', JSON.stringify(Object.assign(defaultOptions, config), undefined, 4));
         return config;
     }
 }
